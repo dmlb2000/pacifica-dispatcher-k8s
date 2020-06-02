@@ -3,14 +3,18 @@
 """Test cart database setup class."""
 import os
 from time import sleep
+from shutil import rmtree
+from tempfile import TemporaryDirectory
 import threading
 import cherrypy
 from celery.bin.celery import main as celery_main
-from pacifica.example.rest import Root, error_page_default
-from pacifica.example.orm import ExampleModel, database_setup
+from pacifica.dispatcher_k8s.dispatcher import DB, ReceiveTaskModel
+from pacifica.dispatcher_k8s.rest import application, error_page_default
+from pacifica.dispatcher_k8s.orm import ScriptLog
+from pacifica.dispatcher_k8s.config import get_config
 
 
-class TestExampleBase:
+class TestDispatcherK8SBase:
     """Contain all the tests for the Cart Interface."""
 
     PORT = 8069
@@ -21,26 +25,34 @@ class TestExampleBase:
     @classmethod
     def setup_server(cls):
         """Start all the services."""
-        os.environ['EXAMPLE_CPCONFIG'] = os.path.join(os.path.dirname(
-            os.path.realpath(__file__)), '..', 'server.conf')
-        cherrypy.config.update({'error_page.default': error_page_default})
-        cherrypy.config.update(os.environ['EXAMPLE_CPCONFIG'])
-        cherrypy.tree.mount(Root(), '/', os.environ['EXAMPLE_CPCONFIG'])
+        os.environ['SCRIPT_DIR'] = os.path.join(os.path.dirname(__file__), '..', 'contrib', 'example', 'scripts')
+        cherrypy.config.update({
+            'server.socket_host': cls.HOST,
+            'server.socket_port': cls.PORT
+        })
+        cherrypy.tree.mount(application, '/', config={
+            '/': {
+                'error_page.default': error_page_default,
+                'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
+            }
+        })
 
     # pylint: disable=invalid-name
     def setUp(self):
         """Setup the database with in memory sqlite."""
         # pylint: disable=protected-access
         # pylint: disable=no-member
-        ExampleModel._meta.database.drop_tables([ExampleModel])
-        database_setup()
+        DB.drop_tables([ScriptLog, ReceiveTaskModel])
         # pylint: enable=no-member
+
+        self.data_dir_name = TemporaryDirectory().name
+        os.environ['DATA_DIR'] = self.data_dir_name
 
         def run_celery_worker():
             """Run the main solo worker."""
             return celery_main([
-                'celery', '-A', 'pacifica.example.tasks', 'worker', '--pool', 'solo',
-                '--quiet', '-b', 'redis://127.0.0.1:6379/0'
+                'celery', '-A', 'pacifica.dispatcher_k8s.tasks', 'worker', '--pool', 'solo',
+                '--quiet', '-b', get_config().get('celery', 'broker_url')
             ])
 
         self.celery_thread = threading.Thread(target=run_celery_worker)
@@ -53,17 +65,18 @@ class TestExampleBase:
         """Tear down the test and remove local state."""
         try:
             celery_main([
-                'celery', '-A', 'pacifica.example.tasks', 'control',
-                '-b', 'redis://127.0.0.1:6379/0', 'shutdown'
+                'celery', '-A', 'pacifica.dispatcher_k8s.tasks', 'control',
+                '-b', get_config().get('celery', 'broker_url'), 'shutdown'
             ])
         except SystemExit:
             pass
         self.celery_thread.join()
         try:
             celery_main([
-                'celery', '-A', 'pacifica.example.tasks', '-b', 'redis://127.0.0.1:6379/0',
+                'celery', '-A', 'pacifica.dispatcher_k8s.tasks',
+                '-b', get_config().get('celery', 'broker_url'),
                 '--force', 'purge'
             ])
         except SystemExit:
             pass
-        # pylint: enable=protected-access
+        rmtree(self.data_dir_name)
