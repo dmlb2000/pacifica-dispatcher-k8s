@@ -88,7 +88,7 @@ class CeleryThreadPlugin(plugins.SimplePlugin):
     def stop(self):
         self.bus.log('Stopping down Celery worker')
         CELERY_APP.control.broadcast('shutdown')
-        self.celery_thread
+        self.celery_thread.isAlive()
         self.celery_thread.join()
 
 
