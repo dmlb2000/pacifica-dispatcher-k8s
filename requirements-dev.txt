@@ -1,4 +1,5 @@
 coverage
+pacifica-cli
 peewee
 pep257
 pre-commit

@@ -6,8 +6,8 @@ from .dispatcher import ReceiveTaskModel, ROUTER
 
 CELERY_APP = ReceiveTaskModel.create_celery_app(
     ROUTER,
-    'pacifica.dispatcher.app',
-    'pacifica.dispatcher.tasks.receive',
+    'pacifica.dispatcher_k8s.app',
+    'pacifica.dispatcher_k8s.tasks.receive',
     backend=get_config().get('celery', 'backend_url'),
     broker=get_config().get('celery', 'broker_url')
 )

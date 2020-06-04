@@ -1,0 +1,86 @@
+[
+  {
+    "destinationTable": "Transactions.submitter",
+    "displayFormat": "{_id} - {first_name} {last_name}",
+    "displayTitle": "Currently Logged On",
+    "displayType": "logged_on",
+    "metaID": "logon",
+    "queryDependency": {},
+    "queryFields": [
+      "first_name",
+      "last_name",
+      "_id"
+    ],
+    "sourceTable": "users",
+    "value": "",
+    "valueField": "_id"
+  },
+  {
+    "destinationTable": "Transactions.project",
+    "displayFormat": "{_id} - {title}",
+    "displayTitle": "Project ID",
+    "displayType": "select",
+    "metaID": "project",
+    "queryDependency": {
+      "instrument_id": "instrument"
+    },
+    "queryFields": [
+      "_id",
+      "title"
+    ],
+    "sourceTable": "projects",
+    "value": "",
+    "valueField": "_id"
+  },
+  {
+    "destinationTable": "Transactions.instrument",
+    "displayFormat": "{_id} {name_short} - {display_name}",
+    "displayTitle": "Instrument ID",
+    "displayType": "select",
+    "metaID": "instrument",
+    "queryDependency": {},
+    "queryFields": [
+      "_id",
+      "name_short",
+      "display_name"
+    ],
+    "sourceTable": "instruments",
+    "value": "",
+    "valueField": "_id"
+  },
+  {
+    "destinationTable": "TransactionKeyValue",
+    "displayFormat": "{_id} - {first_name} {last_name}",
+    "displayTitle": "User ID the data is for",
+    "displayType": "select",
+    "key": "User of Record",
+    "metaID": "user-of-record",
+    "queryDependency": {
+      "project_id": "project"
+    },
+    "queryFields": [
+      "first_name",
+      "last_name",
+      "_id"
+    ],
+    "sourceTable": "users",
+    "value": "",
+    "valueField": "_id"
+  },
+  {
+    "destinationTable": "NothingReally",
+    "directoryOrder": 0,
+    "displayFormat": "Project ID {_id}",
+    "displayType": "directoryTree",
+    "metaID": "directory-project",
+    "queryDependency": {
+      "_id": "project"
+    },
+    "queryFields": [
+      "_id"
+    ],
+    "sourceTable": "projects",
+    "value": "",
+    "valueField": "_id"
+  }
+]

@@ -6,11 +6,13 @@ from time import sleep
 from argparse import ArgumentParser, SUPPRESS
 from threading import Thread
 import cherrypy
+from cherrypy.process import wspbus, plugins
 from celery.bin.celery import main as celery_main
 from .orm import database_setup
 from .rest import application, error_page_default
 from .globals import CONFIG_FILE
 from .config import get_config
+from .tasks import CELERY_APP
 from .eventhandler import make_routes
 
 
@@ -35,7 +37,7 @@ def stop_later(doit=False):
 def run_celery_worker():
     """Run the main solo worker."""
     return celery_main([
-        'celery', '-A', 'pacifica.dispatcher_k8s.tasks', 'worker', '--pool', 'eventlet',
+        'celery', '-A', 'pacifica.dispatcher_k8s.tasks:CELERY_APP', 'worker', '--pool', 'eventlet',
         '-b', get_config().get('celery', 'broker_url')
     ])
 
@@ -56,35 +58,38 @@ def main(argv=None):
                         default=False, dest='stop_later',
                         action='store_true')
     if argv is None:  # pragma: no cover
-        args = parser.parse_args(sys_argv)
+        args = parser.parse_args(sys_argv[1:])
     else:
         args = parser.parse_args(argv)
     database_setup()
     stop_later(args.stop_later)
     make_routes()
-    celery_thread = Thread(target=run_celery_worker)
-    celery_thread.start()
-    cherrypy.config.update({'error_page.default': error_page_default})
+    CeleryThreadPlugin(cherrypy.engine).subscribe()
     cherrypy.config.update({
+        'error_page.default': error_page_default,
         'server.socket_host': args.address,
         'server.socket_port': args.port
     })
-    cherrypy.tree.mount(application, '/', config={
+    cherrypy.quickstart(application, '/', config={
         '/': {
             'error_page.default': error_page_default,
             'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
         }
     })
-    cherrypy.engine.start()
-    cherrypy.engine.block()
-    try:
-        celery_main([
-            'celery', '-A', 'pacifica.dispatcher_k8s.tasks', 'control',
-            '-b', get_config().get('celery', 'broker_url'), 'shutdown'
-        ])
-    except SystemExit:
-        pass
-    celery_thread.join()
+
+
+
+class CeleryThreadPlugin(plugins.SimplePlugin):
+    def start(self):
+        self.bus.log('Starting up Celery worker')
+        self.celery_thread = Thread(target=run_celery_worker)
+        self.celery_thread.start()
+
+    def stop(self):
+        self.bus.log('Stopping down Celery worker')
+        CELERY_APP.control.broadcast('shutdown')
+        self.celery_thread
+        self.celery_thread.join()
 
 
 if __name__ == '__main__':

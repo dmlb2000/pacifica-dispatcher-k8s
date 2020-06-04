@@ -18,4 +18,4 @@ def error_page_default(**kwargs):
     })
 
 
-application = ReceiveTaskModel.create_cherrypy_app(CELERY_APP.tasks['pacifica.dispatcher.tasks.receive'])
+application = ReceiveTaskModel.create_cherrypy_app(CELERY_APP.tasks['pacifica.dispatcher_k8s.tasks.receive'])

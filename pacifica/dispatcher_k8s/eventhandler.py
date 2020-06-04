@@ -122,6 +122,7 @@ def generate_eventhandler(script_config):
             This handler downloads all files in the event.
             Converts the files to uppercase and uploads them back to Pacifica.
             """
+            print("not getting to handler")
             script_log = self._create_scriptlog(event)
             self._handle_download(event)
             self._handle_script(script_log, event)
@@ -132,7 +133,9 @@ def generate_eventhandler(script_config):
 def make_routes():
     """Make the routes in the router."""
     for script in get_config().options('dispatcher_k8s_scripts'):
+        print("Making route for {}".format(script))
         script_config = get_script_config(get_config(), script)
+        print("config {}".format(script_config))
         ROUTER.add_route(
             # pylint: disable=no-member
             Path.parse_str(script_config.router_jsonpath),

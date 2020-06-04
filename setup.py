@@ -21,13 +21,14 @@ setup(
     namespace_packages=['pacifica'],
     entry_points={
         'console_scripts': [
-            'pacifica-example=pacifica.example.__main__:main'
+            'pacifica-dispatcher-k8s=pacifica.dispatcher_k8s.__main__:main'
         ]
     },
     install_requires=[
         'celery',
         'cherrypy',
         'peewee',
-        'pacifica-dispatcher'
+        'pacifica-dispatcher',
+        'eventlet'
     ]
 )
