@@ -34,6 +34,8 @@ celery_app = ReceiveTaskModel.create_celery_app(
 )
 celery_app.conf.update(**CELERY_OPTIONS)
 make_routes()
+
+
 def setup_broker_dir():
     """Setup the broker directories."""
     for _chk_dir in [_broker_dir, join(_broker_dir, 'out'), join(_broker_dir, 'processed')]:

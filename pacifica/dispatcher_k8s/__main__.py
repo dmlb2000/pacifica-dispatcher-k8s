@@ -39,6 +39,7 @@ def run_celery_worker():
     worker = celery_worker.worker(app=celery_app)
     return worker.run(**CELERY_OPTIONS)
 
+
 def run_cherrypy_server(args):
     """Run the main cherrypy quickstart."""
     cherrypy.config.update({
@@ -59,6 +60,7 @@ def run_cherrypy_server(args):
             'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
         }
     })
+
 
 def main(argv=None):
     """Main method to start the httpd server."""
@@ -86,6 +88,7 @@ def main(argv=None):
     celery_proc = Process(target=run_celery_worker, name='celery')
     cherrypy_proc.start()
     celery_proc.start()
+
     def _term_procs():
         cherrypy_proc.terminate()
         celery_proc.terminate()

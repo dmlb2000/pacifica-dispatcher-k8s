@@ -23,6 +23,7 @@ before_script:
     curl -X POST -H 'content-type: application/json' -T /tmp/file-104-update.json 'http://localhost:8121/files?_id=103'
     curl -X POST -H 'content-type: application/json' -T /tmp/file-104-update.json 'http://localhost:8121/files?_id=104'
   - curl 'http://127.0.0.1:8051/getid?range=200&mode=file'
+  - printf 'http://localhost:8066/upload\nhttp://localhost:8066/get_state\nhttp://localhost:8181/uploader\nhttp://localhost:8181/ingest\nhttp://localhost:8081\nhttp://localhost:8181/status/transactions/by_id\nTrue\nNone\n' | pacifica-cli configure
 script:
   - pip install .
   - cd tests
