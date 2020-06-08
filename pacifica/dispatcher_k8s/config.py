@@ -26,10 +26,8 @@ def get_config():
     configparser.set('database', 'peewee_url', getenv(
         'PEEWEE_URL', 'sqlite:///db.sqlite3'))
     configparser.add_section('celery')
-    configparser.set('celery', 'broker_url', getenv(
-        'BROKER_URL', 'memory:///'))
-    configparser.set('celery', 'backend_url', getenv(
-        'BACKEND_URL', 'rpc://'))
+    configparser.set('celery', 'broker_directory', getenv(
+        'BROKER_DIRECTORY', 'broker'))
     configparser.add_section('dispatcher_k8s')
     configparser.set('dispatcher_k8s', 'self_url', getenv(
         'SELF_URL', 'http://localhost:8069/receive'))
@@ -45,7 +43,15 @@ def get_config():
     def _script_defaults(script):
         configparser.set('dispatcher_k8s_scripts', script, '')
         configparser.add_section(script)
-        configparser.set(script, 'router_jsonpath', '$.data')
+        configparser.set(script, 'router_jsonpath', """$[?(
+            $["data"][*][?(
+                @["destinationTable"] = "TransactionKeyValue"
+                    and
+                @["key"] = "do_processing"
+                    and
+                @["value"] = "True"
+            )]
+        )]""")
         configparser.set(script, 'script_file', 'run')
         section_str = '{}:output_dirs'.format(script)
         configparser.add_section(section_str)

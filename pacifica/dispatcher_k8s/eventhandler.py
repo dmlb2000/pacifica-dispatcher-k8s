@@ -57,26 +57,28 @@ def generate_eventhandler(script_config):
 
         def _handle_download(self, event: Event) -> None:
             """Handle the download of the data to the download directory."""
-            down_path = os.path.join(script_config.data_dir, event.eventID, 'download')
+            output_path = os.path.join(script_config.data_dir, event.event_id, 'output')
+            down_path = os.path.join(script_config.data_dir, event.event_id, 'download')
             if os.path.isdir(down_path):
                 rmtree(down_path)
+            os.makedirs(output_path)
             os.makedirs(down_path)
             file_insts = File.from_cloudevents_model(event)
             # just make sure we have everything and the file objs are closed
-            with _redirect_stdout_stderr(down_path, 'download-'):
+            with _redirect_stdout_stderr(output_path, 'download-'):
                 for file_opener in self.downloader_runner.download(down_path, file_insts):
                     with file_opener():
                         pass
 
         @staticmethod
         def _handle_script(script_log: ScriptLog, event: Event) -> None:
-            exe_log_dir = os.path.join(script_config.data_dir, event.eventID, script_config.output_dirs[0].directory)
+            exe_log_dir = os.path.join(script_config.data_dir, event.event_id, script_config.output_dirs[0].directory)
             with _redirect_stdout_stderr(exe_log_dir):
                 try:
                     status = subprocess.run(
                         [os.path.join(script_config.script_dir, script_config.script)],
                         capture_output=True,
-                        cwd=os.path.join(script_config.data_dir, event.eventID),
+                        cwd=os.path.join(script_config.data_dir, event.event_id),
                         check=True
                     )
                 except subprocess.CalledProcessError as ex:
@@ -93,17 +95,18 @@ def generate_eventhandler(script_config):
         @staticmethod
         def _parse_csv_file(upload_dir, upload_config):
             ret = []
-            with open(os.path.join(upload_dir, upload_config.kvfile)) as csvfile:
-                for row in csv.reader(csvfile):
-                    ret.append(
-                        TransactionKeyValue(key=row[0], value=row[1]),
-                    )
+            if os.path.isfile(os.path.join(upload_dir, upload_config.kvfile)):
+                with open(os.path.join(upload_dir, upload_config.kvfile)) as csvfile:
+                    for row in csv.reader(csvfile):
+                        ret.append(
+                            TransactionKeyValue(key=row[0], value=row[1]),
+                        )
             return ret
 
         def _handle_uploads(self, event: ScriptLog):
             transaction_inst = Transaction.from_cloudevents_model(event)
             for upload_config in script_config.output_dirs:
-                upload_dir = os.path.join(script_config.data_dir, event.eventID, upload_config.directory)
+                upload_dir = os.path.join(script_config.data_dir, event.event_id, upload_config.directory)
                 with _redirect_stdout_stderr(upload_dir):
                     (_bundle, _job_id, _state) = self.uploader_runner.upload(
                         upload_dir,
@@ -122,7 +125,6 @@ def generate_eventhandler(script_config):
             This handler downloads all files in the event.
             Converts the files to uppercase and uploads them back to Pacifica.
             """
-            print("not getting to handler")
             script_log = self._create_scriptlog(event)
             self._handle_download(event)
             self._handle_script(script_log, event)
@@ -133,9 +135,7 @@ def generate_eventhandler(script_config):
 def make_routes():
     """Make the routes in the router."""
     for script in get_config().options('dispatcher_k8s_scripts'):
-        print("Making route for {}".format(script))
         script_config = get_script_config(get_config(), script)
-        print("config {}".format(script_config))
         ROUTER.add_route(
             # pylint: disable=no-member
             Path.parse_str(script_config.router_jsonpath),

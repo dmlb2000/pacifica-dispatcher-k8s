@@ -18,9 +18,9 @@ class ScriptLog(Model):
 
     uuid = UUIDField(primary_key=True, default=uuid.uuid4, index=True)
     event = TextField(index=False)
-    stdout = TextField(index=False)
-    stderr = TextField(index=False)
-    return_code = TextField(index=True)
+    stdout = TextField(index=False, null=True)
+    stderr = TextField(index=False, null=True)
+    return_code = TextField(index=True, null=True)
     script_id = CharField(index=True)
     created = DateTimeField(default=datetime.now, index=True)
     updated = DateTimeField(default=datetime.now, index=True)

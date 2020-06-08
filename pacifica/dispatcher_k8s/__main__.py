@@ -1,19 +1,19 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """The main module for executing the CherryPy server."""
+from __future__ import absolute_import, unicode_literals
 from sys import argv as sys_argv
 from time import sleep
+from signal import signal, SIGTERM
 from argparse import ArgumentParser, SUPPRESS
 from threading import Thread
+from multiprocessing import Process
 import cherrypy
-from cherrypy.process import wspbus, plugins
-from celery.bin.celery import main as celery_main
+from celery.bin import worker as celery_worker
 from .orm import database_setup
 from .rest import application, error_page_default
 from .globals import CONFIG_FILE
-from .config import get_config
-from .tasks import CELERY_APP
-from .eventhandler import make_routes
+from .tasks import celery_app, CELERY_OPTIONS, setup_broker_dir
 
 
 def stop_later(doit=False):
@@ -36,11 +36,29 @@ def stop_later(doit=False):
 
 def run_celery_worker():
     """Run the main solo worker."""
-    return celery_main([
-        'celery', '-A', 'pacifica.dispatcher_k8s.tasks:CELERY_APP', 'worker', '--pool', 'eventlet',
-        '-b', get_config().get('celery', 'broker_url')
-    ])
+    worker = celery_worker.worker(app=celery_app)
+    return worker.run(**CELERY_OPTIONS)
 
+def run_cherrypy_server(args):
+    """Run the main cherrypy quickstart."""
+    cherrypy.config.update({
+        'error_page.default': error_page_default,
+        'server.socket_host': args.address,
+        'server.socket_port': args.port,
+        'engine.autoreload.on': False
+    })
+    cherrypy.tree.mount(application, '/', config={
+        '/': {
+            'error_page.default': error_page_default,
+            'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
+        }
+    })
+    return cherrypy.quickstart(application, '/', config={
+        '/': {
+            'error_page.default': error_page_default,
+            'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
+        }
+    })
 
 def main(argv=None):
     """Main method to start the httpd server."""
@@ -63,33 +81,20 @@ def main(argv=None):
         args = parser.parse_args(argv)
     database_setup()
     stop_later(args.stop_later)
-    make_routes()
-    CeleryThreadPlugin(cherrypy.engine).subscribe()
-    cherrypy.config.update({
-        'error_page.default': error_page_default,
-        'server.socket_host': args.address,
-        'server.socket_port': args.port
-    })
-    cherrypy.quickstart(application, '/', config={
-        '/': {
-            'error_page.default': error_page_default,
-            'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-        }
-    })
-
-
-
-class CeleryThreadPlugin(plugins.SimplePlugin):
-    def start(self):
-        self.bus.log('Starting up Celery worker')
-        self.celery_thread = Thread(target=run_celery_worker)
-        self.celery_thread.start()
-
-    def stop(self):
-        self.bus.log('Stopping down Celery worker')
-        CELERY_APP.control.broadcast('shutdown')
-        self.celery_thread.isAlive()
-        self.celery_thread.join()
+    setup_broker_dir()
+    cherrypy_proc = Process(target=run_cherrypy_server, args=(args,), name='cherrypy')
+    celery_proc = Process(target=run_celery_worker, name='celery')
+    cherrypy_proc.start()
+    celery_proc.start()
+    def _term_procs():
+        cherrypy_proc.terminate()
+        celery_proc.terminate()
+        cherrypy_proc.join()
+        celery_proc.join()
+    signal(SIGTERM, _term_procs)
+    cherrypy_proc.join()
+    celery_proc.join()
+    return 0
 
 
 if __name__ == '__main__':

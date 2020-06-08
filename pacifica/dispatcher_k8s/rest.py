@@ -3,7 +3,7 @@
 """CherryPy module containing classes for rest interface."""
 from json import dumps
 import cherrypy
-from .tasks import CELERY_APP
+from .tasks import celery_app
 from .dispatcher import ReceiveTaskModel
 
 
@@ -18,4 +18,4 @@ def error_page_default(**kwargs):
     })
 
 
-application = ReceiveTaskModel.create_cherrypy_app(CELERY_APP.tasks['pacifica.dispatcher_k8s.tasks.receive'])
+application = ReceiveTaskModel.create_cherrypy_app(celery_app.tasks['pacifica.dispatcher_k8s.tasks.receive'])
