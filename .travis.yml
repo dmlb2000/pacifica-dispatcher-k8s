@@ -2,8 +2,6 @@ language: python
 dist: bionic
 
 python:
-  - 3.6
-  - 3.7
   - 3.8
 
 stages:
@@ -35,15 +33,7 @@ script:
 
 jobs:
   include:
-    - stage: lint
-      python: 3.6
-      script: pre-commit run -a
-      before_script: skip
-    - python: 3.7
-      script: pre-commit run -a
-      before_script: skip
-    - python: 3.8
-      script: pre-commit run -a
+    - script: pre-commit run -a
       before_script: skip
 
 install:
