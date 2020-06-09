@@ -107,6 +107,6 @@ class TestDispatcherK8SBase:
     # pylint: disable=invalid-name
     def tearDown(self):
         """Tear down the test and remove local state."""
-        self.celery_proc.kill()
+        self.celery_proc.terminate()
         self.celery_proc.join()
         rmtree(_data_dir_name)
