@@ -81,18 +81,13 @@ class TestDispatcherK8SBase:
         """Start all the services."""
         # pylint: disable=import-outside-toplevel
         from pacifica.dispatcher_k8s.tasks import setup_broker_dir
-        from pacifica.dispatcher_k8s.rest import application, error_page_default
+        from pacifica.dispatcher_k8s.rest import application, app_config
         setup_broker_dir()
         cherrypy.config.update({
             'server.socket_host': cls.HOST,
             'server.socket_port': cls.PORT
         })
-        cherrypy.tree.mount(application, '/', config={
-            '/': {
-                'error_page.default': error_page_default,
-                'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-            }
-        })
+        cherrypy.tree.mount(application, '/', config=app_config)
 
     # pylint: disable=invalid-name
     def setUp(self):

@@ -18,4 +18,10 @@ def error_page_default(**kwargs):
     })
 
 
+app_config = {
+    '/': {
+        'error_page.default': error_page_default,
+        'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
+    }
+}
 application = ReceiveTaskModel.create_cherrypy_app(celery_app.tasks['pacifica.dispatcher_k8s.tasks.receive'])

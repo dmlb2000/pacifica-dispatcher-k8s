@@ -11,7 +11,7 @@ from multiprocessing import Process
 import cherrypy
 from celery.bin import worker as celery_worker
 from .orm import database_setup
-from .rest import application, error_page_default
+from .rest import application, error_page_default, app_config
 from .globals import CONFIG_FILE
 from .tasks import celery_app, CELERY_OPTIONS, setup_broker_dir
 
@@ -51,18 +51,7 @@ def run_cherrypy_server(args):
         'server.socket_port': args.port,
         'engine.autoreload.on': False
     })
-    cherrypy.tree.mount(application, '/', config={
-        '/': {
-            'error_page.default': error_page_default,
-            'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-        }
-    })
-    return cherrypy.quickstart(application, '/', config={
-        '/': {
-            'error_page.default': error_page_default,
-            'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-        }
-    })
+    return cherrypy.quickstart(application, '/', config=app_config)
 
 
 def main(argv=None):
