@@ -1,0 +1,2 @@
+[report]
+include = */pacifica/dispatcher_k8s/*

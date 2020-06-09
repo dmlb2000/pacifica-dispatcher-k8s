@@ -12,7 +12,6 @@ import requests
 _data_dir_name = os.path.join(os.path.dirname(__file__), 'datadir')
 os.environ['DATA_DIR'] = _data_dir_name
 os.environ['BROKER_DIRECTORY'] = os.path.join(_data_dir_name, 'broker')
-os.environ['SCRIPT_DIR'] = os.path.join(os.path.dirname(__file__), '..', 'contrib', 'example', 'scripts')
 os.environ['UPLOAD_URL'] = 'http://localhost:8066/upload'
 os.environ['UPLOAD_STATUS_URL'] = 'http://localhost:8066/get_state'
 os.environ['UPLOAD_POLICY_URL'] = 'http://localhost:8181/uploader'
@@ -28,6 +27,8 @@ def run_celery_worker():
     # pylint: disable=import-outside-toplevel
     from pacifica.dispatcher_k8s.tasks import celery_app, CELERY_OPTIONS
     from celery.bin import worker as celery_worker
+    CELERY_OPTIONS['pool'] = 'solo'
+    CELERY_OPTIONS['concurrency'] = 1
     worker = celery_worker.worker(app=celery_app)
     return worker.run(**CELERY_OPTIONS)
 
@@ -101,12 +102,11 @@ class TestDispatcherK8SBase:
         database_setup()
         self.celery_proc = Process(target=run_celery_worker, name='celery')
         self.celery_proc.start()
-        print('Done Starting Celery')
         sleep(3)
 
     # pylint: disable=invalid-name
     def tearDown(self):
         """Tear down the test and remove local state."""
-        self.celery_proc.terminate()
+        self.celery_proc.kill()
         self.celery_proc.join()
         rmtree(_data_dir_name)

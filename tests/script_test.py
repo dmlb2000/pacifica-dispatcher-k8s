@@ -6,6 +6,9 @@ from os.path import join, dirname
 from time import sleep
 from multiprocessing import Process
 from cherrypy.test import helper
+
+os.environ['SCRIPT_DIR'] = os.path.join(os.path.dirname(__file__), '..', 'contrib', 'example', 'scripts')
+
 from .celery_setup_test import TestDispatcherK8SBase
 
 
@@ -28,6 +31,9 @@ class DispatcherK8STest(TestDispatcherK8SBase, helper.CPWebCase):
 
     def test_happy_path(self):
         """Test a default summation in example."""
+        from pacifica.dispatcher_k8s.orm import ScriptLog
         return_code = _call_cli('pacifica-cli', 'upload', '--logon', 'dmlb2001', 'uploader.json')
         self.assertEqual(return_code, 0, 'return code wasn\'t zero {}'.format(return_code))
         sleep(10)
+        scriptlog = ScriptLog.get()
+        self.assertEqual(scriptlog.return_code, '0', 'Script should return 0')

@@ -59,7 +59,7 @@ def generate_eventhandler(script_config):
             """Handle the download of the data to the download directory."""
             output_path = os.path.join(script_config.data_dir, event.event_id, 'output')
             down_path = os.path.join(script_config.data_dir, event.event_id, 'download')
-            if os.path.isdir(down_path):
+            if os.path.isdir(down_path):  # pragma: no cover just sanity condition should never happen
                 rmtree(down_path)
             os.makedirs(output_path)
             os.makedirs(down_path)

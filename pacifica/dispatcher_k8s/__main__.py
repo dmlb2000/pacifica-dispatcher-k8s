@@ -80,7 +80,7 @@ def main(argv=None):
     cherrypy_proc.start()
     celery_proc.start()
 
-    def _term_procs():
+    def _term_procs():  # pragma: no cover cmd line Ctrl-C
         cherrypy_proc.terminate()
         celery_proc.terminate()
         cherrypy_proc.join()
@@ -90,7 +90,3 @@ def main(argv=None):
     cherrypy_proc.join()
     celery_proc.join()
     return 0
-
-
-if __name__ == '__main__':
-    main()
