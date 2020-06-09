@@ -10,5 +10,10 @@ class DispatcherCmdTest(TestCase):
 
     def test_happy_path(self):
         """Test a default summation in example."""
-        return_code = cmd_main(['pacifica-dispatcher-cmd', '--stop-after-a-moment'])
-        self.assertEqual(return_code, 0, 'return code wasn\'t zero {}'.format(return_code))
+        hit_exception = False
+        try:
+            cmd_main(['pacifica-dispatcher-cmd', '--stop-after-a-moment'])
+        except SystemExit as exc:
+            hit_exception = True
+            self.assertEqual(exc.code, 0, 'return code wasn\'t zero {}'.format(exc.code))
+        self.assertTrue(hit_exception, 'Ran the exception block')
