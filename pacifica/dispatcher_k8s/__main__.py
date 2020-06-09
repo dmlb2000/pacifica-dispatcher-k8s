@@ -16,7 +16,7 @@ from .globals import CONFIG_FILE
 from .tasks import celery_app, CELERY_OPTIONS, setup_broker_dir
 
 
-def stop_later(doit=False):
+def stop_later(doit, cherrypy_proc, celery_proc):
     """Used for unit testing stop after 60 seconds."""
     if not doit:  # pragma: no cover
         return
@@ -28,7 +28,10 @@ def stop_later(doit=False):
         Hopefully this is long enough for the end-to-end tests to finish
         """
         sleep(20)
-        cherrypy.engine.exit()
+        cherrypy_proc.terminate()
+        celery_proc.terminate()
+        cherrypy_proc.join()
+        celery_proc.join()
     sleep_thread = Thread(target=sleep_then_exit)
     sleep_thread.daemon = True
     sleep_thread.start()
@@ -82,7 +85,6 @@ def main(argv=None):
     else:
         args = parser.parse_args(argv)
     database_setup()
-    stop_later(args.stop_later)
     setup_broker_dir()
     cherrypy_proc = Process(target=run_cherrypy_server, args=(args,), name='cherrypy')
     celery_proc = Process(target=run_celery_worker, name='celery')
@@ -95,6 +97,7 @@ def main(argv=None):
         cherrypy_proc.join()
         celery_proc.join()
     signal(SIGTERM, _term_procs)
+    stop_later(args.stop_later, cherrypy_proc, celery_proc)
     cherrypy_proc.join()
     celery_proc.join()
     return 0
