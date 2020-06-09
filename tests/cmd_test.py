@@ -11,9 +11,11 @@ class DispatcherCmdTest(TestCase):
     def test_happy_path(self):
         """Test a default summation in example."""
         hit_exception = False
+        return_code = -1
         try:
-            cmd_main(['--stop-after-a-moment'])
+            return_code = cmd_main(['--stop-after-a-moment'])
         except SystemExit as exc:
             hit_exception = True
             self.assertEqual(exc.code, 0, 'return code wasn\'t zero {}'.format(exc.code))
-        self.assertTrue(hit_exception, 'Ran the exception block')
+        self.assertFalse(hit_exception, 'Ran the exception block')
+        self.assertEqual(return_code, 0, 'return code wasn\'t zero {}'.format(return_code))
