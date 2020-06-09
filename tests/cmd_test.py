@@ -12,7 +12,7 @@ class DispatcherCmdTest(TestCase):
         """Test a default summation in example."""
         hit_exception = False
         try:
-            cmd_main(['pacifica-dispatcher-cmd', '--stop-after-a-moment'])
+            cmd_main(['--stop-after-a-moment'])
         except SystemExit as exc:
             hit_exception = True
             self.assertEqual(exc.code, 0, 'return code wasn\'t zero {}'.format(exc.code))
