@@ -1,25 +1,27 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""The ORM module defining the SQL model for example."""
+"""The ORM module defining the SQL model for dispatcher k8s."""
 import uuid
 from datetime import datetime
-from peewee import Model, CharField, DateTimeField, UUIDField
-from playhouse.db_url import connect
-from pacifica.example.config import get_config
-
-DB = connect(get_config().get('database', 'peewee_url'))
+from peewee import Model, CharField, TextField, DateTimeField, UUIDField
+from .dispatcher import DB, ReceiveTaskModel
 
 
 def database_setup():
     """Setup the database."""
-    ExampleModel.database_setup()
+    ScriptLog.database_setup()
+    DB.create_tables((ReceiveTaskModel,))
 
 
-class ExampleModel(Model):
+class ScriptLog(Model):
     """Example saving some name data."""
 
     uuid = UUIDField(primary_key=True, default=uuid.uuid4, index=True)
-    value = CharField(index=True)
+    event = TextField(index=False)
+    stdout = TextField(index=False, null=True)
+    stderr = TextField(index=False, null=True)
+    return_code = TextField(index=True, null=True)
+    script_id = CharField(index=True)
     created = DateTimeField(default=datetime.now, index=True)
     updated = DateTimeField(default=datetime.now, index=True)
     deleted = DateTimeField(null=True, index=True)

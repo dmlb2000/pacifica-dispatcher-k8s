@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo 'This is an error string' >&2
+echo 'This is an output string'
+exit -1

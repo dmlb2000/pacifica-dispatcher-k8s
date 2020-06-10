@@ -3,14 +3,37 @@
 """Test cart database setup class."""
 import os
 from time import sleep
-import threading
+from shutil import rmtree
+from multiprocessing import Process
 import cherrypy
-from celery.bin.celery import main as celery_main
-from pacifica.example.rest import Root, error_page_default
-from pacifica.example.orm import ExampleModel, database_setup
+import requests
 
 
-class TestExampleBase:
+_data_dir_name = os.path.join(os.path.dirname(__file__), 'datadir')
+os.environ['DATA_DIR'] = _data_dir_name
+os.environ['BROKER_DIRECTORY'] = os.path.join(_data_dir_name, 'broker')
+os.environ['UPLOAD_URL'] = 'http://localhost:8066/upload'
+os.environ['UPLOAD_STATUS_URL'] = 'http://localhost:8066/get_state'
+os.environ['UPLOAD_POLICY_URL'] = 'http://localhost:8181/uploader'
+os.environ['UPLOAD_VALIDATION_URL'] = 'http://localhost:8181/ingest'
+os.environ['DOWNLOAD_URL'] = 'http://localhost:8081'
+os.environ['DOWNLOAD_POLICY_URL'] = 'http://localhost:8181/status/transactions/by_id'
+os.environ['AUTHENTICATION_TYPE'] = 'None'
+os.environ['UPLOADER_CONFIG'] = os.path.join(os.path.dirname(__file__), 'uploader.json')
+
+
+def run_celery_worker():
+    """Run the main solo worker."""
+    # pylint: disable=import-outside-toplevel
+    from pacifica.dispatcher_k8s.tasks import celery_app, CELERY_OPTIONS
+    from celery.bin import worker as celery_worker
+    CELERY_OPTIONS['pool'] = 'solo'
+    CELERY_OPTIONS['concurrency'] = 1
+    worker = celery_worker.worker(app=celery_app)
+    return worker.run(**CELERY_OPTIONS)
+
+
+class TestDispatcherK8SBase:
     """Contain all the tests for the Cart Interface."""
 
     PORT = 8069
@@ -18,52 +41,72 @@ class TestExampleBase:
     url = 'http://{0}:{1}'.format(HOST, PORT)
     headers = {'content-type': 'application/json'}
 
+    # pylint: disable=invalid-name
+    @classmethod
+    def setUpClass(cls):
+        """Create a subscription and save it to the class."""
+        notify_url = os.getenv('NOTIFY_URL', 'http://localhost:8070')
+        self_url = os.getenv('SELF_URL', 'http://localhost:8069')
+        remote_user = os.getenv('REMOTE_USER', 'dmlb2001')
+        resp = requests.post(
+            '{}/eventmatch'.format(notify_url),
+            headers={'Http-Remote-User': remote_user},
+            json={
+                'name': 'My Event Match',
+                'jsonpath': """
+                    $[?(
+                        @["cloudEventsVersion"] = "0.1" and
+                        @["eventType"] = "org.pacifica.metadata.ingest"
+                )]
+                """,
+                'target_url': '{}/receive'.format(self_url)
+            }
+        )
+        assert resp.status_code == 200
+        cls.subscription_uuid = resp.json()['uuid']
+
+    # pylint: disable=invalid-name
+    @classmethod
+    def tearDownClass(cls):
+        """Delete the notification subscription."""
+        notify_url = os.getenv('NOTIFY_URL', 'http://localhost:8070')
+        remote_user = os.getenv('REMOTE_USER', 'dmlb2001')
+        resp = requests.delete(
+            '{}/eventmatch/{}'.format(notify_url, cls.subscription_uuid),
+            headers={'Http-Remote-User': remote_user}
+        )
+        assert resp.status_code == 200
+
     @classmethod
     def setup_server(cls):
         """Start all the services."""
-        os.environ['EXAMPLE_CPCONFIG'] = os.path.join(os.path.dirname(
-            os.path.realpath(__file__)), '..', 'server.conf')
-        cherrypy.config.update({'error_page.default': error_page_default})
-        cherrypy.config.update(os.environ['EXAMPLE_CPCONFIG'])
-        cherrypy.tree.mount(Root(), '/', os.environ['EXAMPLE_CPCONFIG'])
+        # pylint: disable=import-outside-toplevel
+        from pacifica.dispatcher_k8s.tasks import setup_broker_dir
+        from pacifica.dispatcher_k8s.rest import application, app_config
+        setup_broker_dir()
+        cherrypy.config.update({
+            'server.socket_host': cls.HOST,
+            'server.socket_port': cls.PORT
+        })
+        cherrypy.tree.mount(application, '/', config=app_config)
 
     # pylint: disable=invalid-name
     def setUp(self):
         """Setup the database with in memory sqlite."""
-        # pylint: disable=protected-access
-        # pylint: disable=no-member
-        ExampleModel._meta.database.drop_tables([ExampleModel])
+        # pylint: disable=import-outside-toplevel
+        from pacifica.dispatcher_k8s.tasks import setup_broker_dir
+        from pacifica.dispatcher_k8s.dispatcher import DB, ReceiveTaskModel
+        from pacifica.dispatcher_k8s.orm import ScriptLog, database_setup
+        setup_broker_dir()
+        DB.drop_tables([ScriptLog, ReceiveTaskModel])
         database_setup()
-        # pylint: enable=no-member
-
-        def run_celery_worker():
-            """Run the main solo worker."""
-            return celery_main([
-                'celery', '-A', 'pacifica.example.tasks', 'worker', '--pool', 'solo',
-                '--quiet', '-b', 'redis://127.0.0.1:6379/0'
-            ])
-
-        self.celery_thread = threading.Thread(target=run_celery_worker)
-        self.celery_thread.start()
-        print('Done Starting Celery')
+        self.celery_proc = Process(target=run_celery_worker, name='celery')
+        self.celery_proc.start()
         sleep(3)
 
     # pylint: disable=invalid-name
     def tearDown(self):
         """Tear down the test and remove local state."""
-        try:
-            celery_main([
-                'celery', '-A', 'pacifica.example.tasks', 'control',
-                '-b', 'redis://127.0.0.1:6379/0', 'shutdown'
-            ])
-        except SystemExit:
-            pass
-        self.celery_thread.join()
-        try:
-            celery_main([
-                'celery', '-A', 'pacifica.example.tasks', '-b', 'redis://127.0.0.1:6379/0',
-                '--force', 'purge'
-            ])
-        except SystemExit:
-            pass
-        # pylint: enable=protected-access
+        self.celery_proc.terminate()
+        self.celery_proc.join()
+        rmtree(_data_dir_name)

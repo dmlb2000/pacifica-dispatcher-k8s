@@ -3,38 +3,5 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.uwsgi
-    links:
-    - redis
-    - mysql
     ports:
     - 8069:8069
-    environment:
-      PEEWEE_ADDR: mysql
-      BROKER_URL: redis://redis:6379/0
-
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.celery
-    links:
-     - redis
-     - mysql
-    environment:
-      PEEWEE_ADDR: mysql
-      BROKER_URL: redis://redis:6379/0
-
-  mysql:
-    image: mysql:5
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: pacifica_example
-      MYSQL_USER: example
-      MYSQL_PASSWORD: example
-    ports:
-     - 3306:3306
-
-  redis:
-    image: redis
-    ports:
-      - 6379:6379

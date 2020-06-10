@@ -1,0 +1,4 @@
+#!/bin/bash
+
+find download -type f | xargs -n 1 -I '{}' sha512sum '{}' > output/sha512sum.txt
+printf 'do_processing,False' > output/kvp.csv

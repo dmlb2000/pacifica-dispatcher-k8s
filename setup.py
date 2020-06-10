@@ -6,11 +6,11 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='pacifica-example',
+    name='pacifica-dispatcher-k8s',
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
-    description='Pacifica Example Library',
-    url='https://github.com/pacifica/template-repository/',
+    description='Pacifica Dispatcher for Kubernetes',
+    url='https://github.com/pacifica/pacifica-dispatcher-k8s/',
     long_description=open(path.join(
         path.abspath(path.dirname(__file__)),
         'README.md')).read(),
@@ -21,12 +21,14 @@ setup(
     namespace_packages=['pacifica'],
     entry_points={
         'console_scripts': [
-            'pacifica-example=pacifica.example.__main__:main'
+            'pacifica-dispatcher-k8s=pacifica.dispatcher_k8s.__main__:main'
         ]
     },
     install_requires=[
         'celery',
         'cherrypy',
-        'peewee'
+        'peewee',
+        'pacifica-dispatcher',
+        'eventlet'
     ]
 )
