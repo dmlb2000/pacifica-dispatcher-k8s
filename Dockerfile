@@ -7,4 +7,4 @@ RUN mkdir /data /scripts.d /etc/pacifica-cli
 COPY tests/uploader.json /etc/pacifica-cli/uploader.json
 WORKDIR /data
 EXPOSE 8069
-ENTRYPOINT python -m pacifica.dispatcher_k8s
+ENTRYPOINT pacifica-dispatcher-k8s
