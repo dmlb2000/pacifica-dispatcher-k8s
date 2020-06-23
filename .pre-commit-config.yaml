@@ -1,10 +1,10 @@
 repos:
   - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.5.2
+    rev: v1.5.3
     hooks:
       - id: autopep8
   - repo: https://gitlab.com/pycqa/flake8
-    rev: '3.8.2'
+    rev: '3.8.3'
     hooks:
       - id: flake8
         args: [--max-line-length=120]

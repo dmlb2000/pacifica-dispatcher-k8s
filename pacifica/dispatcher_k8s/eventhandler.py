@@ -15,6 +15,7 @@ from jsonpath2.path import Path
 from cloudevents.model import Event
 from pacifica.downloader import Downloader
 from pacifica.uploader import Uploader
+from pacifica.cli.methods import generate_requests_auth
 from pacifica.dispatcher.models import File, Transaction, TransactionKeyValue
 from pacifica.dispatcher.event_handlers import EventHandler
 from pacifica.dispatcher.downloader_runners import DownloaderRunner, RemoteDownloaderRunner
@@ -134,12 +135,13 @@ def generate_eventhandler(script_config):
 
 def make_routes():
     """Make the routes in the router."""
+    auth_obj = generate_requests_auth(get_config())
     for script in get_config().options('dispatcher_k8s_scripts'):
         script_config = get_script_config(get_config(), script)
         ROUTER.add_route(
             # pylint: disable=no-member
             Path.parse_str(script_config.router_jsonpath),
             generate_eventhandler(script_config)(
-                RemoteDownloaderRunner(Downloader()), RemoteUploaderRunner(Uploader())
+                RemoteDownloaderRunner(Downloader(**auth_obj)), RemoteUploaderRunner(Uploader(**auth_obj))
             )
         )
