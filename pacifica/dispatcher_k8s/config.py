@@ -26,9 +26,9 @@ def get_config():
     configparser.set('authentication', 'type', getenv(
         'AUTHENTICATION_TYPE', 'basic'))
     configparser.set('authentication', 'username', getenv(
-        'AUTHENTICATION_USERNAME', None))
+        'AUTHENTICATION_USERNAME', ''))
     configparser.set('authentication', 'password', getenv(
-        'AUTHENTICATION_PASSWORD', None))
+        'AUTHENTICATION_PASSWORD', ''))
     configparser.add_section('database')
     configparser.set('database', 'peewee_url', getenv(
         'PEEWEE_URL', 'sqlite:///db.sqlite3'))
