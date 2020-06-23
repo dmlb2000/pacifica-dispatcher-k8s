@@ -22,6 +22,13 @@ def get_local_scripts(script_dir):
 def get_config():
     """Return the ConfigParser object with defaults set."""
     configparser = ConfigParser()
+    configparser.add_section('authentication')
+    configparser.set('authentication', 'type', getenv(
+        'AUTHENTICATION_TYPE', 'basic'))
+    configparser.set('authentication', 'username', getenv(
+        'AUTHENTICATION_USERNAME', None))
+    configparser.set('authentication', 'password', getenv(
+        'AUTHENTICATION_PASSWORD', None))
     configparser.add_section('database')
     configparser.set('database', 'peewee_url', getenv(
         'PEEWEE_URL', 'sqlite:///db.sqlite3'))

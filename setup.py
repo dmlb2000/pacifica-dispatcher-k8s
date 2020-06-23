@@ -28,6 +28,7 @@ setup(
         'celery',
         'cherrypy',
         'peewee',
+        'pacifica-cli',
         'pacifica-dispatcher',
         'eventlet'
     ]
