@@ -58,7 +58,7 @@ def generate_eventhandler(script_config):
 
         def _handle_download(self, event: Event) -> None:
             """Handle the download of the data to the download directory."""
-            output_path = os.path.join(script_config.data_dir, event.event_id, 'output')
+            output_path = os.path.join(script_config.data_dir, event.event_id, script_config.output_dirs[0].directory)
             down_path = os.path.join(script_config.data_dir, event.event_id, 'download')
             if os.path.isdir(down_path):  # pragma: no cover just sanity condition should never happen
                 rmtree(down_path)
@@ -108,16 +108,15 @@ def generate_eventhandler(script_config):
             transaction_inst = Transaction.from_cloudevents_model(event)
             for upload_config in script_config.output_dirs:
                 upload_dir = os.path.join(script_config.data_dir, event.event_id, upload_config.directory)
-                with _redirect_stdout_stderr(upload_dir):
-                    (_bundle, _job_id, _state) = self.uploader_runner.upload(
-                        upload_dir,
-                        transaction=Transaction(
-                            submitter=transaction_inst.submitter,
-                            instrument=transaction_inst.instrument,
-                            project=transaction_inst.project
-                        ),
-                        transaction_key_values=self._parse_csv_file(upload_dir, upload_config)
-                    )
+                (_bundle, _job_id, _state) = self.uploader_runner.upload(
+                    upload_dir,
+                    transaction=Transaction(
+                        submitter=transaction_inst.submitter,
+                        instrument=transaction_inst.instrument,
+                        project=transaction_inst.project
+                    ),
+                    transaction_key_values=self._parse_csv_file(upload_dir, upload_config)
+                )
 
         def handle(self, event: Event) -> None:
             """
