@@ -21,7 +21,7 @@ def get_local_scripts(script_dir):
 
 def get_config():
     """Return the ConfigParser object with defaults set."""
-    configparser = ConfigParser()
+    configparser = ConfigParser(allow_no_value=True)
     configparser.add_section('endpoints')
     configparser.set('endpoints', 'ca_bundle', 'True')
     configparser.add_section('authentication')
