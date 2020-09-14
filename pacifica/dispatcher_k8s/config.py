@@ -52,7 +52,8 @@ def get_config():
 
     def _script_defaults(script):
         configparser.set('dispatcher_k8s_scripts', script, '')
-        configparser.add_section(script)
+        if not configparser.has_section(script):
+            configparser.add_section(script)
         if not configparser.get(script, 'router_jsonpath', fallback=None):
             configparser.set(script, 'router_jsonpath', """$[?(
                 $["data"][*][?(
@@ -66,12 +67,14 @@ def get_config():
         if not configparser.get(script, 'script_file', fallback=None):
             configparser.set(script, 'script_file', 'run')
         section_str = '{}:output_dirs'.format(script)
-        configparser.add_section(section_str)
+        if not configparser.has_section(section_str):
+            configparser.add_section(section_str)
         if not configparser.options(section_str):
             configparser.set(section_str, 'output', '')
         for output_dir in configparser.options(section_str):
             section_str = '{}:{}'.format(script, output_dir)
-            configparser.add_section(section_str)
+            if not configparser.has_section(section_str):
+                configparser.add_section(section_str)
             if not configparser.get(section_str, 'directory', fallback=None):
                 configparser.set(section_str, 'directory', output_dir)
             if not configparser.get(section_str, 'key_value_file', fallback=None):
