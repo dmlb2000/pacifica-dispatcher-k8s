@@ -3,6 +3,8 @@ dist: bionic
 
 python:
   - 3.8
+  - 3.7
+  - 3.6
 
 stages:
   - lint
@@ -33,7 +35,8 @@ script:
 
 jobs:
   include:
-    - script: pre-commit run -a
+    - stage: lint
+      script: pre-commit run -a
       before_script: skip
 
 install:

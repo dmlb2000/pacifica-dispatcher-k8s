@@ -76,7 +76,8 @@ def generate_eventhandler(script_config):
                 try:
                     status = subprocess.run(
                         [os.path.join(script_config.script_dir, script_config.script)],
-                        capture_output=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
                         cwd=os.path.join(script_config.data_dir, event.event_id),
                         check=True
                     )
