@@ -53,7 +53,7 @@ def get_config():
     def _script_defaults(script):
         configparser.set('dispatcher_k8s_scripts', script, '')
         configparser.add_section(script)
-        if not configparser.get(script, 'router_jsonpath'):
+        if not configparser.get(script, 'router_jsonpath', fallback=None):
             configparser.set(script, 'router_jsonpath', """$[?(
                 $["data"][*][?(
                     @["destinationTable"] = "TransactionKeyValue"
@@ -63,7 +63,7 @@ def get_config():
                     @["value"] = "True"
                 )]
             )]""")
-        if not configparser.get(script, 'script_file'):
+        if not configparser.get(script, 'script_file', fallback=None):
             configparser.set(script, 'script_file', 'run')
         section_str = '{}:output_dirs'.format(script)
         configparser.add_section(section_str)
@@ -72,11 +72,11 @@ def get_config():
         for output_dir in configparser.options(section_str):
             section_str = '{}:{}'.format(script, output_dir)
             configparser.add_section(section_str)
-            if not configparser.get(section_str, 'directory'):
+            if not configparser.get(section_str, 'directory', fallback=None):
                 configparser.set(section_str, 'directory', output_dir)
-            if not configparser.get(section_str, 'key_value_file'):
+            if not configparser.get(section_str, 'key_value_file', fallback=None):
                 configparser.set(section_str, 'key_value_file', 'kvp.csv')
-            if not configparser.get(section_str, 'key_value_parser'):
+            if not configparser.get(section_str, 'key_value_parser', fallback=None):
                 configparser.set(section_str, 'key_value_parser', 'csv')
     if local_scripts:
         for script in local_scripts:
