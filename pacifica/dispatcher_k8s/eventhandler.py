@@ -141,6 +141,6 @@ def make_routes():
             # pylint: disable=no-member
             Path.parse_str(script_config.router_jsonpath),
             generate_eventhandler(script_config)(
-                RemoteDownloaderRunner(Downloader(**auth_obj)), RemoteUploaderRunner(Uploader(**auth_obj))
+                RemoteDownloaderRunner(Downloader(auth=auth_obj)), RemoteUploaderRunner(Uploader(auth=auth_obj))
             )
         )

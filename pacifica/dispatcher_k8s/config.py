@@ -47,35 +47,42 @@ def get_config():
     configparser.set('dispatcher_k8s', 'data_dir', getenv(
         'DATA_DIR', '/data'))
     configparser.add_section('dispatcher_k8s_scripts')
+    configparser.read(CONFIG_FILE)
     local_scripts = get_local_scripts(configparser.get('dispatcher_k8s', 'script_dir'))
 
     def _script_defaults(script):
         configparser.set('dispatcher_k8s_scripts', script, '')
         configparser.add_section(script)
-        configparser.set(script, 'router_jsonpath', """$[?(
-            $["data"][*][?(
-                @["destinationTable"] = "TransactionKeyValue"
-                    and
-                @["key"] = "do_processing"
-                    and
-                @["value"] = "True"
-            )]
-        )]""")
-        configparser.set(script, 'script_file', 'run')
+        if not configparser.get(script, 'router_jsonpath'):
+            configparser.set(script, 'router_jsonpath', """$[?(
+                $["data"][*][?(
+                    @["destinationTable"] = "TransactionKeyValue"
+                        and
+                    @["key"] = "do_processing"
+                        and
+                    @["value"] = "True"
+                )]
+            )]""")
+        if not configparser.get(script, 'script_file'):
+            configparser.set(script, 'script_file', 'run')
         section_str = '{}:output_dirs'.format(script)
         configparser.add_section(section_str)
-        configparser.set(section_str, 'output', '')
-        section_str = '{}:output'.format(script)
-        configparser.add_section(section_str)
-        configparser.set(section_str, 'directory', 'output')
-        configparser.set(section_str, 'key_value_file', 'kvp.csv')
-        configparser.set(section_str, 'key_value_parser', 'csv')
+        if not configparser.options(section_str):
+            configparser.set(section_str, 'output', '')
+        for output_dir in configparser.options(section_str):
+            section_str = '{}:{}'.format(script, output_dir)
+            configparser.add_section(section_str)
+            if not configparser.get(section_str, 'directory'):
+                configparser.set(section_str, 'directory', output_dir)
+            if not configparser.get(section_str, 'key_value_file'):
+                configparser.set(section_str, 'key_value_file', 'kvp.csv')
+            if not configparser.get(section_str, 'key_value_parser'):
+                configparser.set(section_str, 'key_value_parser', 'csv')
     if local_scripts:
         for script in local_scripts:
             _script_defaults(script)
     else:
         _script_defaults('run')
-    configparser.read(CONFIG_FILE)
     return configparser
 
 
