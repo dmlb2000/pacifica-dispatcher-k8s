@@ -6,6 +6,7 @@ from os.path import join, dirname
 from importlib import reload
 from time import sleep
 from multiprocessing import Process
+import requests
 from cherrypy.test import helper
 import celery_setup_test
 
@@ -39,3 +40,10 @@ class DispatcherK8STest(celery_setup_test.TestDispatcherK8SBase, helper.CPWebCas
         sleep(10)
         scriptlog = ScriptLog.get()
         self.assertEqual(scriptlog.return_code, '0', 'Script should return 0')
+        resp = requests.get('http://127.0.0.1:8069/scriptlog/{}'.format(scriptlog.uuid))
+        self.assertEqual(resp.status_code, 200, 'Response for scriptlog should be 200 not {}'.format(resp.status_code))
+        self.assertEqual(
+            resp.json()['uuid'],
+            str(scriptlog.uuid),
+            'Response uuid should be the same as in DB {} != {}'.format(resp.json()['uuid'], scriptlog.uuid)
+        )

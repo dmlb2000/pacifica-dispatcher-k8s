@@ -6,6 +6,7 @@ Event Handler Module.
 Contains the event handler classes for the scripts.
 """
 import os
+import uuid
 import csv
 import contextlib
 import subprocess
@@ -13,6 +14,7 @@ from shutil import rmtree
 from json import dumps
 from jsonpath2.path import Path
 from cloudevents.model import Event
+import celery
 from pacifica.downloader import Downloader
 from pacifica.uploader import Uploader
 from pacifica.cli.methods import generate_requests_auth
@@ -50,6 +52,7 @@ def generate_eventhandler(script_config):
         @staticmethod
         def _create_scriptlog(event: Event) -> ScriptLog:
             ret = ScriptLog(
+                uuid=uuid.UUID(celery.current_task.request.id),
                 event=dumps(event.to_dict()),
                 script_id=script_config.script_id
             )

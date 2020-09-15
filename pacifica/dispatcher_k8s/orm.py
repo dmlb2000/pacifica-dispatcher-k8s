@@ -1,10 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """The ORM module defining the SQL model for dispatcher k8s."""
+import json
 import uuid
 from datetime import datetime
 from peewee import Model, CharField, TextField, DateTimeField, UUIDField
 from .dispatcher import DB, ReceiveTaskModel
+
+
+class ScriptLogEncoder(json.JSONEncoder):
+    """Json Encoder for the ScriptLog object."""
+
+    def default(self, o):
+        """Default method to encode a ScriptLog object."""
+        if isinstance(o, uuid.UUID):
+            return str(o)
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return json.JSONEncoder.default(self, o)
 
 
 def database_setup():
