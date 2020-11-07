@@ -66,6 +66,8 @@ def get_config():
             )]""")
         if not configparser.get(script, 'script_file', fallback=None):
             configparser.set(script, 'script_file', 'run')
+        if not configparser.get(script, 'download_timeout', fallback=None):
+            configparser.set(script, 'download_timeout', '180')
         section_str = '{}:output_dirs'.format(script)
         if not configparser.has_section(section_str):
             configparser.add_section(section_str)
@@ -107,6 +109,7 @@ def get_script_config(configparser, script):
         router_jsonpath=configparser.get(script, 'router_jsonpath'),
         script_id=script,
         script=configparser.get(script, 'script_file'),
+        download_timeout=configparser.getint(script, 'download_timeout'),
         script_dir=configparser.get('dispatcher_k8s', 'script_dir'),
         data_dir=configparser.get('dispatcher_k8s', 'data_dir'),
         output_dirs=output_dirs

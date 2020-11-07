@@ -70,7 +70,7 @@ def generate_eventhandler(script_config):
             file_insts = File.from_cloudevents_model(event)
             # just make sure we have everything and the file objs are closed
             with _redirect_stdout_stderr(output_path, 'download-'):
-                self.downloader_runner.download(down_path, file_insts)
+                self.downloader_runner.download(down_path, file_insts, timeout=script_config.download_timeout)
 
         @staticmethod
         def _handle_script(script_log: ScriptLog, event: Event) -> None:

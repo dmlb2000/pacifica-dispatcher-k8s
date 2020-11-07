@@ -25,7 +25,7 @@ setup(
         ]
     },
     install_requires=[
-        'celery',
+        'celery<5',
         'cherrypy',
         'peewee',
         'pacifica-cli',
